@@ -85,3 +85,23 @@ models.py
 
 その他の確認はドキュメントで
 https://docs.djangoproject.com/en/3.1/intro/tutorial02/
+
+## 管理者ユーザーの作成¶
+    $ python manage.py createsuperuser
+このコマンドで自動で作れる  
+`http://127.0.0.1:8000/admin/` のURLを叩くと入れる
+
+管理者画面でPOLLSを追加
+polls/admin.pyを使用することで追加することができる
+
+    from django.contrib import admin
+
+    # 管理者のインターフェースの設定
+    from .models import Question
+    
+    admin.site.register(Question)
+##### ※管理者画面の設定はモデルに依存するなど困ったらドキュメントを読む
+
+ここまでのドキュメント  
+https://docs.djangoproject.com/en/3.1/intro/tutorial02/
+
