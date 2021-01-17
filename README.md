@@ -1,13 +1,17 @@
 # Djangoについて
 
-viewsを作成してから`urls.py`の作成  
+※前提としてしっくりこない部分は理解が浅いので書きません :shit:
+
+viewsを作成してから`urls.py`の作成
 
 ## URL
-まず、作成したアプリケーションの**polls**の方にurlの部分を追加してから  
+
+まず、作成したアプリケーションの**polls**の方にurlの部分を追加してから
 
     urlpatterns = [
     path('', views.index, name='index'),
     ]
+
 と記述し、プロジェクト側の**sample**の方に
 
         path('polls/', include('polls.urls'))
@@ -100,8 +104,55 @@ polls/admin.pyを使用することで追加することができる
     from .models import Question
     
     admin.site.register(Question)
+
 ##### ※管理者画面の設定はモデルに依存するなど困ったらドキュメントを読む
 
 ここまでのドキュメント  
 https://docs.djangoproject.com/en/3.1/intro/tutorial02/
 
+## 詳細画面
+
+    def detail(request, question_id):
+        return HttpResponse("You're so in my happy %s" % question_id)
+
+とrailsでいうコントローラ(views.py)に記述し、
+
+    path('<int:question_id>/', views.detail, name='detail'),
+
+山かっこを使用すると、  
+URLの一部が「キャプチャ」され、キーワード引数としてビュー関数に送信
+***これであとはviewの部分を用意すれば完了**
+
+### indexのviews
+
+    {% if latest_question_list %}
+    <ul>
+    {% for question in latest_question_list %}
+        <li><a href="/polls/{{ question.id }}/">{{ question.question_text }}</a></li>
+    {% endfor %}
+    </ul>
+    {% else %}
+        <p>No polls are available.</p>
+    {% endif %}
+
+と**template側**に記述(railsのview)
+
+### コントローラー側の作成
+
+    from django.shortcuts import render
+
+    from .models import Question
+    
+    
+    def index(request):
+        latest_question_list = Question.objects.order_by('-pub_date')[:5]
+        context = {'latest_question_list': latest_question_list}
+        return render(request, 'polls/index.html', context)
+
+### 404の発生方法
+
+    def detail(request, question_id):
+        question = get_object_or_404(Question, pk=question_id)
+        return render(request, 'polls/detail.html', {'question': question})
+
+このように**get_object_or_404**メソッドを使用するだけなので超楽！
