@@ -137,6 +137,9 @@ URLの一部が「キャプチャ」され、キーワード引数としてビ�
 
 と**template側**に記述(railsのview)
 
+ここまでのドキュメント  
+https://docs.djangoproject.com/ja/3.1/intro/tutorial03/
+
 ### コントローラー側の作成
 
     from django.shortcuts import render
@@ -156,3 +159,83 @@ URLの一部が「キャプチャ」され、キーワード引数としてビ�
         return render(request, 'polls/detail.html', {'question': question})
 
 このように**get_object_or_404**メソッドを使用するだけなので超楽！
+
+### 投稿の実装
+
+投稿できるようにformのビューを作成する
+
+    <h1>{{ question.question_text }}</h1>
+
+    {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+    
+    <form action="{% url 'polls:vote' question.id %}" method="post">
+    {% csrf_token %}
+    {% for choice in question.choice_set.all %}
+        <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.id }}">
+        <label for="choice{{ forloop.counter }}">{{ choice.choice_text }}</label><br>
+    {% endfor %}
+    <input type="submit" value="Vote">
+    </form>
+
+コントローラー側の部分
+
+    def vote(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    try:
+        selected_choice = question.choice_set.get(pk=request.POST['choice'])
+    except (KeyError, Choice.DoesNotExist):
+        return render(request, 'polls/detail.html', {
+            'question': question,
+            'error_message': 'それは選べないよん',
+        })
+    else:
+        selected_choice.votes += 1
+        selected_choice.save()
+        # データが二重に投稿されることを防ぎます
+        return HttpResponseRedirect(reverse('polls:results', args=(question.id,)))
+
+エラーメッセージのところはしっかりと復習する必要がある
+
+## 汎用ビューにする
+
+    from django.urls import path
+
+    from . import views
+    
+    app_name = 'polls'
+    urlpatterns = [
+        path('', views.IndexView.as_view(), name='index'),
+        # pkでいける(もともとpkで平気)
+        path('<int:pk>/', views.DetailView.as_view(), name='detail'),
+        path('<int:pk>/results/', views.ResultsView.as_view(), name='results'),
+        path('<int:question_id>/vote/', views.vote, name='vote'),
+    ]
+
+と変更し、それぞれのビューコントローラも
+
+    class IndexView(generic.ListView):
+    template_name = 'polls/index.html'
+    context_object_name = 'latest_question_list'
+
+    def get_queryset(self):
+        """Return the last five published questions."""
+        return Question.objects.order_by('-pub_date')[:5]
+
+
+    class DetailView(generic.DetailView):
+        model = Question
+        template_name = 'polls/detail.html'
+    
+    
+    class ResultsView(generic.DetailView):
+        model = Question
+        template_name = 'polls/results.html'
+
+とする。  
+-> すごくわかりやすくなる
+
+汎用ビューのドキュメント  
+https://docs.djangoproject.com/ja/3.1/topics/class-based-views/
+
+ここまでのドキュメント  
+https://docs.djangoproject.com/ja/3.1/intro/tutorial04/
