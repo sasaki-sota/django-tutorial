@@ -239,3 +239,39 @@ https://docs.djangoproject.com/ja/3.1/topics/class-based-views/
 
 ここまでのドキュメント  
 https://docs.djangoproject.com/ja/3.1/intro/tutorial04/
+
+## モデル部分のテスト
+
+    import datetime
+
+    from django.test import TestCase
+    from django.utils import timezone
+    
+    from polls.models import Question
+    
+
+    # 未来の日付の pub_date を持つ Question のインスタンスを生成するメソッドを持つ django.test.TestCase を継承したサブクラスを作っています。
+    # それから、was_published_recently() の出力をチェック
+    class QuestionModelTests(TestCase):
+        def test_was_published_recently_with_future_questions(self):
+            time = timezone.now() + datetime.timedelta(days=30)
+            future_question = Question(pub_date=time)
+            self.assertIs(future_question.was_published_recently(), False)
+    
+        # 過去のテスト    
+        def test_was_published_recently_with_old_question(self):
+            time = timezone.now() - datetime.timedelta(days=1, seconds=1)
+            old_question = Question(pub_date=time)
+            self.assertIs(old_question.was_published_recently(), False)
+    
+        def test_was_published_recently_with_recent_question(self):
+            time = timezone.now() - datetime.timedelta(hours=23, minutes=59, seconds=59)
+            recent_question = Question(pub_date=time)
+            self.assertIs(recent_question.was_published_recently(), True)
+
+これで現在、過去、未来のテストをすることができるようになる  
+-> これを行うことでメソッドの完成を保証する
+
+テスト部分は記事が多いのでドキュメントを参照  
+https://docs.djangoproject.com/ja/3.1/intro/tutorial05/  
+
